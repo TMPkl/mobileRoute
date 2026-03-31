@@ -16,6 +16,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.myszlak.ui.theme.MySzlakTheme
 
 class MainActivity : ComponentActivity() {
@@ -25,23 +26,29 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             MySzlakTheme {
-                Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
+                // Inicjalizacja ViewModelu wewnątrz setContent
+                val viewModel: BaseViewModel = viewModel()
 
+                Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
                     Column(
                         modifier = Modifier
                             .fillMaxSize()
                             .padding(innerPadding),
                         verticalArrangement = Arrangement.Center,
                         horizontalAlignment = Alignment.CenterHorizontally
-                    )
-                    {
+                    ) {
                         Text(
-                            text = "Wybierz rodzaj aktwności",
+                            text = "Wybierz rodzaj aktywności",
                             fontSize = 32.sp,
                             fontWeight = FontWeight.Normal
                         )
 
-                        Spacer(modifier = Modifier.height(220.dp))
+                        // Przykład reaktywnego tekstu z ViewModelu
+//                        if (viewModel.activityType.isNotEmpty()) {
+//                            Text(text = "Wybrano: ${viewModel.activityType}", color = androidx.compose.ui.graphics.Color.Gray)
+//                        }
+
+                        Spacer(modifier = Modifier.height(200.dp))
 
                         Row(
                             modifier = Modifier
@@ -50,63 +57,45 @@ class MainActivity : ComponentActivity() {
                             horizontalArrangement = Arrangement.Center,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
+                            // PRZYCISK: ROWER
                             Button(
                                 onClick = {
-                                    val intent = Intent(this@MainActivity, RoutesActivity::class.java)
-                                    intent.putExtra("activityType", "rower")
-                                    startActivity(intent)
+                                    viewModel.activityType = "rowerowe"
+                                    navigateToRoutes(viewModel.activityType)
                                 },
                                 modifier = Modifier
                                     .weight(1f)
-                                    .height(50.dp)
+                                    .height(60.dp)
                                     .padding(horizontal = 8.dp)
                             ) {
-                                Text(
-                                    text = "trasy rowerowe",
-                                    fontSize = 18.sp,
-                                    fontWeight = FontWeight.Bold
-                                )
+                                Text(text = "trasy rowerowe", fontSize = 16.sp, fontWeight = FontWeight.Bold)
                             }
 
+                            // PRZYCISK: PIESZE
                             Button(
                                 onClick = {
-                                    val intent = Intent(this@MainActivity, RoutesActivity::class.java)
-                                    intent.putExtra("activityType", "piesze")
-                                    startActivity(intent)
+                                    viewModel.activityType = "piesze"
+                                    navigateToRoutes(viewModel.activityType)
                                 },
                                 modifier = Modifier
                                     .weight(1f)
-                                    .height(50.dp)
+                                    .height(60.dp)
                                     .padding(horizontal = 8.dp)
                             ) {
-                                Text(
-                                    text = "trasy piesze",
-                                    fontSize = 18.sp,
-                                    fontWeight = FontWeight.Bold
-                                )
+                                Text(text = "trasy piesze", fontSize = 16.sp, fontWeight = FontWeight.Bold)
                             }
-
                         }
                     }
-
                 }
             }
         }
     }
-}
 
-@Composable
-fun Greeting(name: String, modifier: Modifier = Modifier) {
-    Text(
-        text = "Hello $name!",
-        modifier = modifier
-    )
-}
-
-@Preview(showBackground = true)
-@Composable
-fun GreetingPreview() {
-    MySzlakTheme {
-        Greeting("Android")
+    // Pomocnicza funkcja do nawigacji
+    private fun navigateToRoutes(type: String) {
+        val intent = Intent(this, RoutesActivity::class.java).apply {
+            putExtra("activityType", type)
+        }
+        startActivity(intent)
     }
 }
