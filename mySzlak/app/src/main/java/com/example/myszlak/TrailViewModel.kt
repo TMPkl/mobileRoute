@@ -16,7 +16,7 @@ class TrailViewModel : ViewModel() {
 
     // --- Pojedynczy szlak (szczegóły) ---
     private val _selectedTrail = MutableStateFlow<Trail?>(null)
-    val selectedTrail: StateFlow<Trail?> = _selectedTrail
+    var selectedTrail: StateFlow<Trail?> = _selectedTrail
 
     // --- Stan ładowania i błędów ---
     private val _isLoading = MutableStateFlow(false)

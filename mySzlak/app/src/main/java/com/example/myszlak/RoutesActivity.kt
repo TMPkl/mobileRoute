@@ -1,5 +1,6 @@
 package com.example.myszlak
 
+import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -16,10 +17,18 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.content.ContextCompat
+import androidx.core.content.ContextCompat.startActivity
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.myszlak.ui.theme.MySzlakTheme
 
 class RoutesActivity : ComponentActivity() {
+    private fun navigateToRouteDetails(trailID: Int) {
+        val intent = Intent(this, TrailDetailsActivity::class.java).apply {
+            putExtra("selectedTrail", trailID)
+        }
+        startActivity(intent)
+    }
 
     @OptIn(ExperimentalMaterial3Api::class)
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -119,7 +128,9 @@ class RoutesActivity : ComponentActivity() {
                             RoutesList(
                                 title = title,
                                 routes = trails,
-                                modifier = Modifier.weight(1f)
+                                modifier = Modifier.weight(1f),
+                                onClick = { trailID -> navigateToRouteDetails(trailID)
+                                }
                             )
                         }
                     }
@@ -127,10 +138,11 @@ class RoutesActivity : ComponentActivity() {
             }
         }
     }
+
 }
 
 @Composable
-fun RoutesList(title: String, routes: List<Trail>, modifier: Modifier = Modifier) {
+fun RoutesList(title: String, routes: List<Trail>, modifier: Modifier = Modifier, onClick: (Int) -> Unit) {
     Column(modifier = modifier) {
         Text(
             text = title,
@@ -144,18 +156,18 @@ fun RoutesList(title: String, routes: List<Trail>, modifier: Modifier = Modifier
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             items(routes) { route ->
-                RouteCard(route = route)
+                RouteCard(route = route, onClick = { onClick(route.id)})
             }
         }
     }
 }
 
 @Composable
-fun RouteCard(route: Trail) {
+fun RouteCard(route: Trail, onClick: () -> Unit) {
     Card(
         modifier = Modifier.fillMaxWidth(),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
-        onClick = {}
+        elevation = CardDefaults.cardElevation(defaultElevation = 6.dp),
+        onClick =  onClick
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Text(
