@@ -10,7 +10,7 @@ data class Trail(
     val id: Int,
     val name: String,
     val description: String,
-    val length: Float,
+    val length: Double,
     val type: TrailType,
     val imageId: String
 )

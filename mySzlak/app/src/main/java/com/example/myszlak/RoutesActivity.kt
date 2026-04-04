@@ -11,27 +11,15 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.myszlak.ui.theme.MySzlakTheme
-import com.example.myszlak.Trail
-// Model danych trasy
-
 
 class RoutesActivity : ComponentActivity() {
-
-    // Hardcoded dane
-    private val routes= listOf(
-        Trail(10,"abcde","opisssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssss",10.0f, TrailType.WALKING,"zdjecie"),
-        Trail(10,"abcde","opis",10.0f, TrailType.WALKING,"zdjecie"),
-        Trail(10,"abcde","opis",10.0f, TrailType.WALKING,"zdjecie"),
-        Trail(10,"abcde","opis",10.0f, TrailType.CYCLING,"zdjecie"),
-        Trail(10,"abcde","opis",10.0f, TrailType.CYCLING,"zdjecie"),
-        Trail(10,"abcde","opis",10.0f, TrailType.CYCLING,"zdjecie"))
-
 
     @OptIn(ExperimentalMaterial3Api::class)
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -40,18 +28,27 @@ class RoutesActivity : ComponentActivity() {
 
         setContent {
             MySzlakTheme {
-                val viewModel: BaseViewModel = viewModel()
+                val baseViewModel: BaseViewModel = viewModel()
+                val trailViewModel: TrailViewModel = viewModel()
 
-                // Pobieramy początkowy typ z intencji tylko przy pierwszym uruchomieniu
+                val trails by trailViewModel.trails.collectAsState()
+                val isLoading by trailViewModel.isLoading.collectAsState()
+                val errorMessage by trailViewModel.errorMessage.collectAsState()
+
+                // Pobieramy typ z intencji przy pierwszym uruchomieniu
                 LaunchedEffect(Unit) {
-                    if (viewModel.activityType.isEmpty()) {
-                        viewModel.activityType = intent.getStringExtra("activityType") ?: "piesze"
+                    if (baseViewModel.activityType.isEmpty()) {
+                        baseViewModel.activityType = intent.getStringExtra("activityType") ?: "rowerowe"
+                    }
+                    // Ładujemy dane z API od razu
+                    if (baseViewModel.activityType == "rowerowe") {
+                        trailViewModel.loadCyclingTrails()
+                    } else {
+                        trailViewModel.loadWalkingTrails()
                     }
                 }
 
-                // Wybieramy listę na podstawie stanu w ViewModelu
-                //val routes = if (viewModel.activityType == "rowerowe") bikingRoutes else hikingRoutes
-                val title = if (viewModel.activityType == "rowerowe") "Trasy rowerowe" else "Trasy piesze"
+                val title = if (baseViewModel.activityType == "rowerowe") "Trasy rowerowe" else "Trasy piesze"
 
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
                     Column(
@@ -59,7 +56,6 @@ class RoutesActivity : ComponentActivity() {
                             .fillMaxSize()
                             .padding(innerPadding)
                     ) {
-                        // Przycisk powrotu po prawej u góry
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -75,9 +71,7 @@ class RoutesActivity : ComponentActivity() {
                             }
                         }
 
-                        // Przyciski do zmiany typu tras
                         val options = listOf("rowerowe", "biegowe")
-                        var selectedIndex by remember { mutableStateOf(0) }
 
                         SingleChoiceSegmentedButtonRow(
                             modifier = Modifier
@@ -88,27 +82,46 @@ class RoutesActivity : ComponentActivity() {
                                 SegmentedButton(
                                     shape = SegmentedButtonDefaults.itemShape(index = index, count = options.size),
                                     onClick = {
-                                        selectedIndex = index
-                                        viewModel.activityType = label
+                                        baseViewModel.activityType = label
+                                        // Przy zmianie zakładki ładujemy odpowiednie trasy
+                                        if (label == "rowerowe") {
+                                            trailViewModel.loadCyclingTrails()
+                                        } else {
+                                            trailViewModel.loadWalkingTrails()
+                                        }
                                     },
-                                    selected = viewModel.activityType == label
+                                    selected = baseViewModel.activityType == label
                                 ) {
                                     Text(text = label, fontWeight = FontWeight.Bold)
                                 }
                             }
                         }
 
-                        // Lista tras
-                        val filteredRoutes = when (viewModel.activityType) {
-                            "rowerowe" -> routes.filter { it.type == TrailType.CYCLING }
-                            "biegowe" -> routes.filter { it.type == TrailType.WALKING }
-                            else -> emptyList()
+                        // Spinner podczas ładowania
+                        if (isLoading) {
+                            Box(
+                                modifier = Modifier.fillMaxSize(),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                CircularProgressIndicator()
+                            }
                         }
-                        RoutesList(
-                            title = title,
-                            routes = filteredRoutes,
-                            modifier = Modifier.weight(1f)
-                        )
+
+                        errorMessage?.let {
+                            Text(
+                                text = "Błąd: $it",
+                                color = MaterialTheme.colorScheme.error,
+                                modifier = Modifier.padding(16.dp)
+                            )
+                        }
+
+                        if (!isLoading && errorMessage == null) {
+                            RoutesList(
+                                title = title,
+                                routes = trails,
+                                modifier = Modifier.weight(1f)
+                            )
+                        }
                     }
                 }
             }
@@ -119,7 +132,6 @@ class RoutesActivity : ComponentActivity() {
 @Composable
 fun RoutesList(title: String, routes: List<Trail>, modifier: Modifier = Modifier) {
     Column(modifier = modifier) {
-        // Nagłówek
         Text(
             text = title,
             fontSize = 28.sp,
@@ -127,7 +139,6 @@ fun RoutesList(title: String, routes: List<Trail>, modifier: Modifier = Modifier
             modifier = Modifier.padding(16.dp)
         )
 
-        // Lista tras
         LazyColumn(
             contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp)
@@ -143,7 +154,8 @@ fun RoutesList(title: String, routes: List<Trail>, modifier: Modifier = Modifier
 fun RouteCard(route: Trail) {
     Card(
         modifier = Modifier.fillMaxWidth(),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+        onClick = {}
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Text(
@@ -152,14 +164,13 @@ fun RouteCard(route: Trail) {
                 fontWeight = FontWeight.Bold
             )
             Spacer(modifier = Modifier.height(4.dp))
-            Text(text = "Dystans: ${route.length}", fontSize = 14.sp)
-            val shortDesc = if (route.description.length > 20) {
-                route.description.substring(0, 20) + "..."
+            Text(text = "Dystans: ${route.length} km", fontSize = 14.sp)
+            val shortDesc = if (route.description.length > 60) {
+                route.description.substring(0, 60) + "..."
             } else {
                 route.description
             }
-            Text(text = "Opis: ${shortDesc}", fontSize = 14.sp)
+            Text(text = shortDesc, fontSize = 14.sp)
         }
     }
 }
-

@@ -40,6 +40,15 @@ android {
 }
 
 dependencies {
+    // Retrofit - klient HTTP
+    implementation("com.squareup.retrofit2:retrofit:2.11.0")
+
+    // Konwerter JSON (Gson)
+    implementation("com.squareup.retrofit2:converter-gson:2.11.0")
+
+    // OkHttp logging interceptor (przydatny przy debugowaniu)
+    implementation("com.squareup.okhttp3:logging-interceptor:4.12.0")
+
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.lifecycle.viewmodel.compose)
