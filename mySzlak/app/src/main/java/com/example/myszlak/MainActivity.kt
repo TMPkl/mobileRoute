@@ -29,7 +29,11 @@ class MainActivity : ComponentActivity() {
                 // Inicjalizacja ViewModelu wewnątrz setContent
                 val viewModel: BaseViewModel = viewModel()
 
-                Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
+                Scaffold(modifier = Modifier.fillMaxSize(),
+                        floatingActionButton = {
+                    StopwatchFab()
+                }
+                ) { innerPadding ->
                     Column(
                         modifier = Modifier
                             .fillMaxSize()

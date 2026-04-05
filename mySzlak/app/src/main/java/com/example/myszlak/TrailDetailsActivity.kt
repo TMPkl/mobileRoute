@@ -20,28 +20,29 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import com.example.myszlak.TrailViewModel
-import com.example.myszlak.Trail
-import  androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.ui.platform.LocalContext
 
 class TrailDetailsActivity : ComponentActivity() {
 
@@ -54,13 +55,20 @@ class TrailDetailsActivity : ComponentActivity() {
         setContent {
             MySzlakTheme {
                 val trailViewModel: TrailViewModel = viewModel()
+                val stopwatchViewModel: StopwatchViewModel = viewModel()
                 val selectedTrail by trailViewModel.selectedTrail.collectAsState()
                 val isLoading by trailViewModel.isLoading.collectAsState()
                 val errorMessage by trailViewModel.errorMessage.collectAsState()
                 var imageLoading by remember { mutableStateOf(true) }
+                
+                val currentStopwatchTrailId by stopwatchViewModel.currentTrailId.collectAsState()
+                val isStopwatchRunning by stopwatchViewModel.isRunning.collectAsState()
+                val elapsedSeconds by stopwatchViewModel.elapsedSeconds.collectAsState()
+
+                val context = LocalContext.current
 
                 LaunchedEffect(trailId) {
-                    // Porównujemy trailId (Int), a nie selectedTrail (obiekt Trail)
+                    stopwatchViewModel.bindService(context)
                     if (trailId > 2000) {
                         trailViewModel.loadCyclingTrail(trailId)
                     } else {
@@ -68,7 +76,10 @@ class TrailDetailsActivity : ComponentActivity() {
                     }
                 }
 
-                Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
+                Scaffold(
+                    modifier = Modifier.fillMaxSize(),
+                    floatingActionButton = { StopwatchFab(stopwatchViewModel) }
+                ) { innerPadding ->
                     Column(
                         modifier = Modifier
                             .fillMaxSize()
@@ -129,16 +140,69 @@ class TrailDetailsActivity : ComponentActivity() {
                                     text = "Opis: ${trail.description}",
                                     style = MaterialTheme.typography.bodyLarge
                                 )
+                                
                                 Spacer(modifier = Modifier.height(30.dp))
-                                Text(
-                                    text = "tutaj bedzie stoper"
-                                )
+                                
+                                // Stopwatch controls for this specific trail
+                                Card(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    colors = CardDefaults.cardColors(
+                                        containerColor = MaterialTheme.colorScheme.surfaceVariant
+                                    )
+                                ) {
+                                    Column(
+                                        modifier = Modifier.padding(16.dp),
+                                        horizontalAlignment = Alignment.CenterHorizontally
+                                    ) {
+                                        Text(
+                                            text = "Stoper",
+                                            style = MaterialTheme.typography.titleLarge
+                                        )
+                                        
+                                        val isThisTrailActive = currentStopwatchTrailId == trail.id
+                                        
+                                        Text(
+                                            text = if (isThisTrailActive) formatTime(elapsedSeconds) else "00:00",
+                                            style = MaterialTheme.typography.displayMedium
+                                        )
+                                        
+                                        Row(
+                                            modifier = Modifier.fillMaxWidth(),
+                                            horizontalArrangement = Arrangement.Center
+                                        ) {
+                                            if (isThisTrailActive) {
+                                                Button(
+                                                    onClick = { 
+                                                        if (isStopwatchRunning) stopwatchViewModel.pause() 
+                                                        else stopwatchViewModel.start(trail.id) 
+                                                    }
+                                                ) {
+                                                    Text(if (isStopwatchRunning) "Pauza" else "Wznów")
+                                                }
+                                                Spacer(modifier = Modifier.width(16.dp))
+                                                Button(
+                                                    onClick = { stopwatchViewModel.reset() },
+                                                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
+                                                ) {
+                                                    Text("Zakończ")
+                                                }
+                                            } else {
+                                                Button(
+                                                    onClick = { 
+                                                        stopwatchViewModel.start(trail.id)
+                                                    }
+                                                ) {
+                                                    Text(if (currentStopwatchTrailId != null) "Uruchom tutaj (zastąp obecny)" else "Start")
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
                             }
                         }
-
                     }
                 }
             }
-
+        }
     }
-}}
+}

@@ -59,7 +59,11 @@ class RoutesActivity : ComponentActivity() {
 
                 val title = if (baseViewModel.activityType == "rowerowe") "Trasy rowerowe" else "Trasy piesze"
 
-                Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
+                Scaffold(modifier = Modifier.fillMaxSize(),
+                        floatingActionButton = {
+                    StopwatchFab()
+                }
+                ) { innerPadding ->
                     Column(
                         modifier = Modifier
                             .fillMaxSize()
@@ -166,7 +170,7 @@ fun RoutesList(title: String, routes: List<Trail>, modifier: Modifier = Modifier
 fun RouteCard(route: Trail, onClick: () -> Unit) {
     Card(
         modifier = Modifier.fillMaxWidth(),
-        elevation = CardDefaults.cardElevation(defaultElevation = 6.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
         onClick =  onClick
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
