@@ -5,19 +5,27 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
-import androidx.compose.material3.Button
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.myszlak.ui.theme.MySzlakTheme
+import kotlinx.coroutines.delay
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -26,80 +34,68 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             MySzlakTheme {
-                // Inicjalizacja ViewModelu wewnątrz setContent
                 val viewModel: BaseViewModel = viewModel()
+                var visible by remember { mutableStateOf(false) }
+                var all_loaded by remember { mutableStateOf(false) }
 
-                Scaffold(modifier = Modifier.fillMaxSize(),
-                        floatingActionButton = {
-                    StopwatchFab()
+                LaunchedEffect(Unit) {
+                    delay(400)
+                    visible = true
+                    delay(1500)
+                    all_loaded = true
                 }
+
+                LaunchedEffect(all_loaded) {
+                    if (all_loaded) {
+                        val intent = Intent(this@MainActivity, RoutesActivity::class.java).apply {
+                            putExtra("activityType", "rowerowe")
+                        }
+                        startActivity(intent)
+                        // Animacja przejścia (fade in/out)
+                        overridePendingTransition(android.R.anim.fade_in, android.R.anim.fade_out)
+                        finish()
+                    }
+                }
+
+                val size by animateDpAsState(
+                    targetValue = if (visible) 400.dp else 1.dp,
+                    label = "logoSize"
+                )
+                val alpha by animateFloatAsState(
+                    targetValue = if (visible) 1f else 0f,
+                    label = "textAlpha"
+                )
+
+                Scaffold(
+                    modifier = Modifier.fillMaxSize(),
+                    floatingActionButton = {
+                        StopwatchFab()
+                    }
                 ) { innerPadding ->
                     Column(
                         modifier = Modifier
                             .fillMaxSize()
                             .padding(innerPadding),
-                        verticalArrangement = Arrangement.Center,
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
+                        Spacer(modifier = Modifier.height(200.dp))
                         Text(
-                            text = "Wybierz rodzaj aktywności",
-                            fontSize = 32.sp,
-                            fontWeight = FontWeight.Normal
+                            text = "Witaj w aplikacji MySzlak!",
+                            fontSize = 30.sp,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.graphicsLayer(alpha = alpha)
                         )
 
-                        // Przykład reaktywnego tekstu z ViewModelu
-//                        if (viewModel.activityType.isNotEmpty()) {
-//                            Text(text = "Wybrano: ${viewModel.activityType}", color = androidx.compose.ui.graphics.Color.Gray)
-//                        }
+                        Spacer(modifier = Modifier.height(50.dp))
 
-                        Spacer(modifier = Modifier.height(200.dp))
-
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = 16.dp),
-                            horizontalArrangement = Arrangement.Center,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            // PRZYCISK: ROWER
-                            Button(
-                                onClick = {
-                                    viewModel.activityType = "rowerowe"
-                                    navigateToRoutes(viewModel.activityType)
-                                },
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .height(60.dp)
-                                    .padding(horizontal = 8.dp)
-                            ) {
-                                Text(text = "trasy rowerowe", fontSize = 16.sp, fontWeight = FontWeight.Bold)
-                            }
-
-                            // PRZYCISK: PIESZE
-                            Button(
-                                onClick = {
-                                    viewModel.activityType = "piesze"
-                                    navigateToRoutes(viewModel.activityType)
-                                },
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .height(60.dp)
-                                    .padding(horizontal = 8.dp)
-                            ) {
-                                Text(text = "trasy piesze", fontSize = 16.sp, fontWeight = FontWeight.Bold)
-                            }
-                        }
+                        Image(
+                            painter = painterResource(id = R.drawable.logo),
+                            contentDescription = "Logo",
+                            modifier = Modifier.size(size)
+                        )
                     }
                 }
             }
         }
-    }
-
-    // Pomocnicza funkcja do nawigacji
-    private fun navigateToRoutes(type: String) {
-        val intent = Intent(this, RoutesActivity::class.java).apply {
-            putExtra("activityType", type)
-        }
-        startActivity(intent)
     }
 }
