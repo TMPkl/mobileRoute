@@ -30,6 +30,9 @@ class StopwatchService : Service() {
     private val _currentTrailId = MutableStateFlow<Int?>(null)
     val currentTrailId: StateFlow<Int?> = _currentTrailId
 
+    private val _currentTrailName = MutableStateFlow<String?>(null)
+    val currentTrailName: StateFlow<String?> = _currentTrailName
+
     private var job: Job? = null
     private val scope = CoroutineScope(Dispatchers.Default)
 
@@ -44,10 +47,11 @@ class StopwatchService : Service() {
         return START_STICKY
     }
 
-    fun start(trailId: Int) {
+    fun start(trailId: Int, trailName: String) {
         if (_currentTrailId.value != trailId) {
             reset()
             _currentTrailId.value = trailId
+            _currentTrailName.value = trailName
         }
         
         if (_isRunning.value) return
@@ -70,6 +74,7 @@ class StopwatchService : Service() {
         pause()
         _elapsedSeconds.value = 0L
         _currentTrailId.value = null
+        _currentTrailName.value = null
     }
 
     fun stopStopwatch() {

@@ -19,6 +19,7 @@ fun StopwatchFab(
     val elapsedSeconds by viewModel.elapsedSeconds.collectAsState()
     val isRunning by viewModel.isRunning.collectAsState()
     val currentTrailId by viewModel.currentTrailId.collectAsState()
+    val currentTrailName by viewModel.currentTrailName.collectAsState()
     val sheetState = rememberModalBottomSheetState()
     var showSheet by remember { mutableStateOf(false) }
 
@@ -31,8 +32,7 @@ fun StopwatchFab(
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(16.dp,
-                ),
+                .padding(16.dp),
             contentAlignment = Alignment.BottomEnd
         ) {
             LargeFloatingActionButton(
@@ -62,7 +62,7 @@ fun StopwatchFab(
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Text(
-                    text = "Trasa #${currentTrailId}",
+                    text = currentTrailName ?: "Trasa",
                     style = MaterialTheme.typography.titleMedium
                 )
                 Text(
@@ -73,7 +73,9 @@ fun StopwatchFab(
                 Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                     Button(onClick = { 
                         if (isRunning) viewModel.pause() 
-                        else currentTrailId?.let { viewModel.start(it) } 
+                        else currentTrailId?.let { id -> 
+                            viewModel.start(id, currentTrailName ?: "Trasa") 
+                        }
                     }) {
                         Text(text = if (isRunning) "Pauza" else "Wznów")
                     }

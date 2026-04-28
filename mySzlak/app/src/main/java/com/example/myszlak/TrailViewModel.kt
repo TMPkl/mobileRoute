@@ -1,14 +1,21 @@
 package com.example.myszlak
 
-import androidx.lifecycle.ViewModel
+import android.app.Application
+import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
-class TrailViewModel : ViewModel() {
+class TrailViewModel(application: Application) : AndroidViewModel(application) {
 
     private val repository = TrailRepository()
+    private val db = AppDatabase.getDatabase(application)
+    private val favoriteDao = db.favoriteDao()
 
     // --- Lista szlaków ---
     private val _trails = MutableStateFlow<List<Trail>>(emptyList())
@@ -16,7 +23,27 @@ class TrailViewModel : ViewModel() {
 
     // --- Pojedynczy szlak (szczegóły) ---
     private val _selectedTrail = MutableStateFlow<Trail?>(null)
-    var selectedTrail: StateFlow<Trail?> = _selectedTrail
+    val selectedTrail: StateFlow<Trail?> = _selectedTrail
+
+    // --- Ulubione ---
+    val favoriteTrails: StateFlow<List<Trail>> = favoriteDao.getAllFavorites()
+        .flatMapLatest { favorites ->
+            kotlinx.coroutines.flow.flowOf(favorites.map { it.toTrail() })
+        }.stateIn(viewModelScope, SharingStarted.Eagerly, emptyList())
+
+    fun isFavorite(trailId: Int): StateFlow<Boolean> = favoriteDao.isFavorite(trailId)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
+
+    fun toggleFavorite(trail: Trail) {
+        viewModelScope.launch {
+            val isFav = favoriteDao.isFavorite(trail.id).first()
+            if (isFav) {
+                favoriteDao.deleteFavorite(trail.toFavorite())
+            } else {
+                favoriteDao.insertFavorite(trail.toFavorite())
+            }
+        }
+    }
 
     // --- Stan ładowania i błędów ---
     private val _isLoading = MutableStateFlow(false)
@@ -76,5 +103,9 @@ class TrailViewModel : ViewModel() {
 
             _isLoading.value = false
         }
+    }
+    
+    fun loadFavorites() {
+        _trails.value = favoriteTrails.value
     }
 }

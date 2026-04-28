@@ -26,6 +26,9 @@ class StopwatchViewModel(application: Application) : AndroidViewModel(applicatio
     private val _currentTrailId = MutableStateFlow<Int?>(null)
     val currentTrailId: StateFlow<Int?> = _currentTrailId
 
+    private val _currentTrailName = MutableStateFlow<String?>(null)
+    val currentTrailName: StateFlow<String?> = _currentTrailName
+
     private val connection = object : ServiceConnection {
         override fun onServiceConnected(name: ComponentName?, binder: IBinder?) {
             val b = binder as StopwatchService.StopwatchBinder
@@ -41,6 +44,9 @@ class StopwatchViewModel(application: Application) : AndroidViewModel(applicatio
             }
             viewModelScope.launch {
                 service?.currentTrailId?.collect { _currentTrailId.value = it }
+            }
+            viewModelScope.launch {
+                service?.currentTrailName?.collect { _currentTrailName.value = it }
             }
         }
 
@@ -64,12 +70,11 @@ class StopwatchViewModel(application: Application) : AndroidViewModel(applicatio
         }
     }
 
-    fun start(trailId: Int) = service?.start(trailId)
+    fun start(trailId: Int, trailName: String) = service?.start(trailId, trailName)
     fun pause() = service?.pause()
     fun reset() = service?.reset()
 
     override fun onCleared() {
         super.onCleared()
-        // service = null // We might want to keep the service running even if VM is cleared
     }
 }
